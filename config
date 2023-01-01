@@ -1,0 +1,10 @@
+
+#define Buzzer  13	
+#define LEDR  A4
+#define LEDG  A5
+#include "pitches.h"    // 引入音調的標頭檔 (包含8個八度音)
+
+#include <LiquidCrystal.h> 
+#include <Keypad.h>
+#define KEY_ROWS 4 // 按鍵模組的列數
+#define KEY_COLS 4 // 按鍵模組的行數
