@@ -1,0 +1,400 @@
+//控制與整體
+    // 引入音調的標頭檔 (包含8個八度音)
+#include "config.h" 
+
+LiquidCrystal lcd(12, 7, 5, 4, 3, 2);
+char symbol[2][15][4]={
+  { "    ",
+    "Do  ","Re  ","Me  ","Fa  ","Sol ","La  ","Si  ",
+    "Do+ ","Re+ ","Me+ ","Fa+ ","Sol+","La+ ","Si+ "},
+  { "    ",
+    "0-7 ","0-6 ","0-5 ","0-4 ","1-7 ","1-6 ","1-5 ",
+    "2-7 ","2-6 ","2-5 ","2-4 ","3-7 ","3-6 ","3-5 ",
+  }
+};
+char keymap[KEY_ROWS][KEY_COLS] = {
+  {'d', 'r', 'm', 'f'},
+  {'s', 'l', 'i', 'p'},
+  {'D', 'R', 'M', 'F'},
+  {'S', 'L', 'I', 'E'}
+};
+byte colPins[KEY_COLS] = {6, A1,  A2, A3};     // 按鍵模組，行1~4接腳。(7~4)
+byte rowPins[KEY_ROWS] = {8, 9, 10, 11}; // 按鍵模組，列1~4接腳。 (0~3)
+// 初始化Keypad物件
+// 語法：Keypad(makeKeymap(按鍵字元的二維陣列), 模組列接腳, 模組行接腳, 模組列數, 模組行數)
+Keypad myKeypad = Keypad(makeKeymap(keymap), rowPins, colPins, KEY_ROWS, KEY_COLS);
+
+// 透過Keypad物件的getKey()方法讀取按鍵的字元
+  char key;
+  
+const int rhythm = 500;  // 定義每1拍的音長(ms)
+char index;   // 音樂盒資料的讀取指標
+int random_V;     //對應pitch的位置
+int SoundLeng;    // 音長的變數
+char song_tone;   // 音高的變數
+int Score=0;
+int Score_set[]={1,1,2,3,5};
+int count;
+boolean bouns;
+boolean start_voice=true;
+int bouns_set[]={5,5,32,60};
+int max_voice,min_voice;    //隨機亂數的音域
+int level=0;
+int x=0;
+int end_index; 
+int column;
+int voice_number[2];
+void  play_tone();
+void random_f();
+void level_end();
+void prepare();
+int CtoI();
+void brain();
+void play_tone();
+// 宣告一個第4 & 第5八度音 Do~Si 的音高陣列
+int pitch[] = { 0,
+  NOTE_C4,NOTE_D4,NOTE_E4,NOTE_F4,NOTE_G4,NOTE_A4,NOTE_B4,
+  NOTE_C5,NOTE_D5,NOTE_E5,NOTE_F5,NOTE_G5,NOTE_A5,NOTE_B5 };
+// 宣告歌譜的陣列資料, 第一筆為音高, 第二筆為音長, 結束代碼為-1
+
+int song_1_4[50];   //第1到4關的音樂題目
+int button_pin[50];//第1到4關的按鍵設定
+float song[][32] = { 
+   { 6,0.5, 7,0.5,  1+7,1.5, 7,0.5, 1+7,1, 3+7,1, 7,3, 3,0.5, 3,0.5, 6,1.5, 5,0.5,  6,1, 1+7,1.5,  5,3},//14
+   { 3,1, 4,1.5,  3,0.5, 4,1, 1+7,1,3,2, 0,0.5, 1+7,0.5, 1+7,0.5, 1+7,0.5, 7,1.5, 4,0.5, 4,1, 7,1, 7,1, 0,1},  //16             
+   {  6,0.5, 7,0.5, 1+7,1.5, 7,0.5, 1+7,1, 3+7,1, 7,3, 3,0.5, 3,0.5, 6,1.5, 5,0.5, 6,1, 1+7,1, 5,3},         //14
+   { 2,0.5, 3,0.5, 4,1, 1+7,0.5, 7,1, 1+7,1, 2+7,0.5, 2+7,0.5, 3+7,0.5, 1+7,2},                //10
+   { 1+7,0.5, 7,0.5, 6,0.5, 6,0.5,  7,1,  5,1, 6,3,  1+7,1, 2+7,1, 3+7,1.5, 2+7,0.5, 3+7,1, 5+7,1, 2+7,3},  //13
+   {  5,0.5, 5,0.5, 1+7,1.5, 7,0.5, 1+7,1, 3+7,1, 3+7,4}      };//8
+
+    float song4[] = { 
+     1+7,0.5, 1+7,0.5,  1+7,0.5, 1+7,0.5, 1+7,0.5, 3+7,0.5, 4+7,0.5, 3+7,0.5,
+          1+7,1, 1+7,0.5, 7,0.5, -1,-1,
+    };
+void setup() {
+  pinMode(Buzzer,OUTPUT);
+
+  pinMode(LEDR,OUTPUT);  
+  pinMode(LEDG,OUTPUT);
+  Serial.begin(9600);
+  randomSeed(analogRead(A0));
+  lcd.begin(16, 2);        // 設定LCD字幕為 16*2
+ 
+}
+//char song_list[][8]={"unlove  ","sky city","Canon   "};
+void loop() {
+  
+  if(level==0)
+  {
+     //lcd.setCursor(0,0);       // 移動游標至第0行第1列
+     lcd.print("start game");        // 顯示字串
+     lcd.setCursor(0,1);       // 移動游標至第0行第1列
+     lcd.print("press1-4");        // 顯示字串
+     key=myKeypad.getKey();
+   if(start_voice==true){
+    play_tone1();
+    start_voice=false;
+   }
+   
+
+    delay(300);
+     lcd.clear();  
+     if(key=='p'){
+      lcd.print("start game :)");
+    //  play_tone1();
+      lcd.clear(); 
+           // 顯示字串
+      do
+      {
+         key=myKeypad.getKey();
+        lcd.print("choose level 1~5");   
+         delay(300);
+        lcd.clear();
+      }while(key!='d' && key!='r' && key!='m' &&key!='f' &&key!='s');
+      level=CtoI();
+    }
+  }
+  
+  if(level==1)
+  {
+    Score=0;
+    max_voice=4;  min_voice=1;
+    voice_number[0]=5;  voice_number[1]=6; 
+    random_f();  
+    prepare();
+    brain();
+    level_end();
+  }
+  
+  if(level==2)
+  {
+    Score=0;
+    max_voice=7;  min_voice=1;
+    voice_number[0]=5;  voice_number[1]=8; 
+    random_f();  
+    prepare();
+    brain();
+  level_end();
+  }
+  if(level==3)
+  {
+    Score=0;
+    max_voice=11;  min_voice=1;
+    voice_number[0]=8;  voice_number[1]=5; 
+    random_f();  
+    prepare();
+    brain();
+    level_end();
+  }
+  
+  if(level==4)
+  {
+    Score=0;
+    max_voice=14;  min_voice=1;
+    voice_number[0]=10;  voice_number[1]=5;
+    random_f();  
+    prepare();
+    brain();
+    level_end();
+  }
+  
+  if(level==5)
+  {
+    Score=0;
+    lcd.print("sky city");        // 顯示字串
+    lcd.setCursor(0,1);       // 移動游標至第0行第1列
+    delay(3000);
+    lcd.clear();
+    prepare();
+      voice_number[1]=1;
+      for(column=0;column<6;column++)
+      {
+        if(column==5)
+          voice_number[0]=8;
+        if(column==3)
+          voice_number[0]=10;
+        if(column==4)
+          voice_number[0]=13;
+        if(column==0 || column==2)
+          voice_number[0]=14;
+         if(column==1)
+          voice_number[0]=16;
+         for(int row=0;row<voice_number[0];row++)
+         {
+           if(row%2==0 && song[column][row]!=0)
+             button_pin[row/2]=song[column][row];   
+         }
+        
+         brain();
+      }
+   
+    
+   // brain();
+    level_end();
+  }
+   
+}
+
+
+void random_f()         //定義1~4關卡的隨機音譜
+{
+    int total_voice=voice_number[0]*voice_number[1]; //voice_number[0]一組有多少音  voice_number[1]一關有多少組
+   for(int i=0;i<total_voice;i++) {            
+      random_V=random(min_voice,max_voice+1);  //min_voice最低音  max_voice最高音
+      button_pin[i]=random_V;
+      song_1_4[i]=pitch[random_V]; 
+   }
+}
+
+//從這開始做
+void play_tone1()
+{
+   index=0;      //指標歸 0, 從歌曲陣列song的第 0 筆開始讀取並發音
+  while (1) {
+    song_tone = char(song4[index]);    //讀出歌曲陣列中的音高
+    index++;    //指標加 1
+    SoundLeng = int(song4[index]*rhythm);  //讀出音長並計算
+    index++;    //指標加 1
+    if (song_tone==-1)        //若是結束代碼-1, 則跳出 while 迴圈
+        break;
+    else if (song_tone==0)      //休止符的處理
+        delay(SoundLeng*1.3);     //暫停指定的音長時間(不發聲)
+    else {
+        tone(Buzzer, pitch[song_tone], SoundLeng);  //讀出音高對應的頻率並發聲
+        delay(SoundLeng*1.3);     //暫停指定的音長時間
+    }
+  }
+}
+
+
+void level_end()
+{
+ key=myKeypad.getKey();
+ lcd.clear();
+ lcd.print("Score=");
+   lcd.print(Score);
+   lcd.setCursor(0,1);  
+   lcd.print("next4-1 back4-3");
+  
+   do
+      {
+         key=myKeypad.getKey();
+          if(key=='p')
+          {
+            if(level!=5)
+               level=level+1;
+            else
+              level=1;
+          }
+          if(key=='E')
+           level=0;
+      }while(key!='p' && key!='E');
+     lcd.clear();
+        
+}  
+
+
+
+int CtoI()
+{
+  if(key=='d')
+    return 1;
+  if(key=='r')
+    return 2;
+  if(key=='m')
+    return 3;
+  if(key=='f')
+    return 4;
+  if(key=='s')
+    return 5;
+  if(key=='l')
+    return 6;
+  if(key=='i')
+    return 7;
+  if(key=='D')
+    return 8;
+  if(key=='R')
+    return 9;
+  if(key=='M')
+    return 10;
+  if(key=='F')
+    return 11;
+  if(key=='S')
+    return 12;
+  if(key=='L')
+    return 13;
+  if(key=='I')
+    return 14;
+    
+}
+
+void prepare()
+{
+  lcd.setCursor(5,0);  
+  lcd.print("level ");
+  lcd.print(level);
+  delay(1000);
+  for(int i=3;i>0;i--){
+  lcd.setCursor(8,1);       // 移動游標至第0行第1列
+  lcd.print(i);
+  delay(1000);
+  }
+  lcd.clear();
+  delay(500);
+  for(int k=min_voice;k<=max_voice;k++){
+    lcd.setCursor(5,0);  
+    lcd.print("level ");
+    lcd.print(level);
+    lcd.setCursor(2,1);
+    for(int h=0;h<4;h++)
+       lcd.print(symbol[0][k][h]);
+    lcd.setCursor(10,1);
+    for(int h=0;h<4;h++)
+       lcd.print(symbol[1][k][h]);
+    tone(Buzzer,pitch[k],700);
+    delay(1000);
+    lcd.clear();
+  }
+  delay(2000);
+  lcd.setCursor(5,0);  
+  lcd.print("level ");
+  lcd.print(level);
+}
+
+void brain()
+{
+
+      for( int i=0; i<voice_number[1] ;i++){
+      if(level!=5)
+      {
+         for( int j=0; j<voice_number[0]; j++){
+          tone(Buzzer,song_1_4[i*5+j],1000);
+          Serial.print(song_1_4[i*5+j]);
+          Serial.print(" ");
+          lcd.setCursor(0,1); 
+          lcd.print("voice:");
+          lcd.setCursor(6+j,1); 
+          lcd.print('?');
+          delay(1500);
+          count=0;
+         }
+      }else{
+        index=0;
+         for( int j=0; j<voice_number[0]*2; j=j+2){
+          if(song[column][index+j]!=0)
+          {
+             lcd.setCursor(j/2,1); 
+             lcd.print('?');       
+          }
+           Serial.println(song[column][index+j]);  // 顯示按鍵的字元
+        if (song[column][index+j]==0)      //休止符的處理
+         delay((song[column][index+j+1])*rhythm*1.3);     //暫停指定的音長時間(不發聲)
+       else {
+        tone(Buzzer,pitch[int(song[column][index+j])],(song[column][index+j+1])*rhythm);
+        delay(song[column][index+j+1]*rhythm*1.3);     //暫停指定的音長時間
+    }
+          count=0;   
+         }
+      }
+      bouns=true;
+      lcd.clear();
+      lcd.setCursor(5,0);  
+      lcd.print("level ");
+      lcd.print(level);
+      do{ 
+        key=myKeypad.getKey();
+        if(key){
+          Serial.print(CtoI());
+          if(CtoI()==button_pin[i*5+count]){
+           digitalWrite(LEDG,255);
+           tone(Buzzer,pitch[CtoI()],300);
+           Score=Score+Score_set[level-1];
+          
+           lcd.setCursor(count,1); 
+           lcd.write(0xFB);
+           
+         }else{
+            bouns=false;
+           digitalWrite(LEDR,255);
+           tone(Buzzer,pitch[CtoI()],300);
+           lcd.setCursor(count,1); 
+           lcd.print('X');
+         }
+         count=count+1;
+         delay(500);
+         digitalWrite(LEDG,0);
+         digitalWrite(LEDR,0);
+       }  
+     }while(count<voice_number[0]);
+      if(bouns==true)
+        Score=Score+bouns_set[level-1];
+      Serial.print("Score=");
+      Serial.print(Score);
+      Serial.print("\n");
+      delay(2500);
+      lcd.clear();
+      lcd.setCursor(5,0);  
+       lcd.print("level ");
+       lcd.print(level);
+      }
+}
